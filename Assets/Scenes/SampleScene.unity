@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 21
   height: 21
-  signs: 4
+  signs: 7
   wallPrefab: {fileID: 4243152037612862407, guid: b9ce3a91fe1e2794daa207394bcb76dd, type: 3}
   floorPrefab: {fileID: 9212911823146159187, guid: 463dc16ba08fe6e4b878476aa989c423, type: 3}
   playerPrefab: {fileID: 6608810736581736520, guid: 1143fee073e6ad94b822c8a6eb9e5d45, type: 3}

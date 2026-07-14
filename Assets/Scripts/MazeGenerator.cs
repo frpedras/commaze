@@ -15,6 +15,7 @@ public class MazeGenerator : MonoBehaviour
     private bool[,] visited; // 2D array to track visited cells
     private int gridWidth;
     private int gridHeight;
+    private List<Transform> createdSigns = new List<Transform>();
     private System.Random rand = new System.Random();
 
     Vector2Int[] directions = { // Define possible directions (Right, Left, Up, Down)
@@ -56,7 +57,12 @@ public class MazeGenerator : MonoBehaviour
 
      bool SetupPlayerAndSigns(int midX, int midY)
     {
-        Instantiate(playerPrefab, new Vector3(midX*2f, 1f, midY*2f), Quaternion.identity); //Instantiate player in the middle of maze
+        GameObject player = Instantiate(playerPrefab, new Vector3(midX*2f, 1f, midY*2f), Quaternion.identity); //Instantiate player in the middle of maze
+        PlayerController playerController = player.GetComponent<PlayerController>();
+        if (playerController == null)
+        {
+            playerController = player.AddComponent<PlayerController>();
+        }
 
         int signsSet = 0;
         bool[,] outPos = new bool[gridWidth, gridHeight];
@@ -67,6 +73,7 @@ public class MazeGenerator : MonoBehaviour
             int y = Random.Range(1, gridHeight - 1);
             if (visited[x, y] && !outPos[x,y] && IsInCorner(x,y)){
                 GameObject s = Instantiate(signsPrefab, new Vector3(x*2f, 0.5f, y*2f), Quaternion.identity); //Instantiate sign at random position
+                createdSigns.Add(s.transform);
                 RotateTowardsClearPath(x , y, s);
                 outPos[x,y] = true;
                 signsSet++;
@@ -74,6 +81,12 @@ public class MazeGenerator : MonoBehaviour
             }
             else
                 attemped++; //fail safe
+        }
+
+        if (playerController != null)
+        {
+            playerController.SetMaze(visited, gridWidth, gridHeight);
+            playerController.SetSigns(createdSigns);
         }
 
         return signsSet == signs;
