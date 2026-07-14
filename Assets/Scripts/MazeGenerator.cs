@@ -13,6 +13,8 @@ public class MazeGenerator : MonoBehaviour
     public GameObject signsPrefab;
 
     private bool[,] visited; // 2D array to track visited cells
+    private int gridWidth;
+    private int gridHeight;
     private System.Random rand = new System.Random();
 
     Vector2Int[] directions = { // Define possible directions (Right, Left, Up, Down)
@@ -29,11 +31,13 @@ public class MazeGenerator : MonoBehaviour
 
     void GenerateMaze()
     {
-        visited = new bool[width, height]; // Initialize the visited array
+        gridWidth = width + 2;
+        gridHeight = height + 2;
+        visited = new bool[gridWidth, gridHeight]; // Initialize the visited array with an outer wall ring
 
-        //Find mid of maze
-        var midX = Mathf.RoundToInt(width/2);
-        var midY = Mathf.RoundToInt(height/2);
+        // Find a valid start cell in the interior for both odd and even sizes
+        var midX = Mathf.RoundToInt(width / 2f) + 1;
+        var midY = Mathf.RoundToInt(height / 2f) + 1;
 
         CreateMaze(midX, midY); // Start the maze generation from mid
 
@@ -55,12 +59,12 @@ public class MazeGenerator : MonoBehaviour
         Instantiate(playerPrefab, new Vector3(midX*2f, 1f, midY*2f), Quaternion.identity); //Instantiate player in the middle of maze
 
         int signsSet = 0;
-        bool[,] outPos = new bool[width, height];;
+        bool[,] outPos = new bool[gridWidth, gridHeight];
 
         int attemped = 0;
         while (signsSet < signs || attemped >= 10000){
-            int x = Random.Range(1, width);
-            int y = Random.Range(1, height);
+            int x = Random.Range(1, gridWidth - 1);
+            int y = Random.Range(1, gridHeight - 1);
             if (visited[x, y] && !outPos[x,y] && IsInCorner(x,y)){
                 GameObject s = Instantiate(signsPrefab, new Vector3(x*2f, 0.5f, y*2f), Quaternion.identity); //Instantiate sign at random position
                 RotateTowardsClearPath(x , y, s);
@@ -99,17 +103,19 @@ public class MazeGenerator : MonoBehaviour
 
     void DrawMaze()
     {
-        for (int x = 0; x < width; x++)
+        var walls = new GameObject("Walls");
+        var floors = new GameObject("Floors");
+        for (int x = 0; x < gridWidth; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < gridHeight; y++)
             {
                 if (!visited[x, y]) // If not visited, place a wall
                 {
-                    Instantiate(wallPrefab, new Vector3(x * 2, 1, y * 2), Quaternion.identity);
+                    Instantiate(wallPrefab, new Vector3(x * 2, 1, y * 2), Quaternion.identity, walls.transform);
                 }
                 else // If visited, place a floor
                 {
-                    Instantiate(floorPrefab, new Vector3(x * 2, 0, y * 2), Quaternion.identity);
+                    Instantiate(floorPrefab, new Vector3(x * 2, 0, y * 2), Quaternion.identity, floors.transform);
                 }
             }
         }
@@ -117,7 +123,7 @@ public class MazeGenerator : MonoBehaviour
 
     bool IsInBounds(int x, int y)
     {
-        return x > 0 && x < width && y > 0 && y < height; // Check bounds
+        return x > 0 && x < gridWidth - 1 && y > 0 && y < gridHeight - 1; // Keep the outer border as walls
     }
 
     void Shuffle(Vector2Int[] array)
