@@ -6,6 +6,8 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 4f;
     public float rotationSpeed = 8f;
     public float arrivalDistance = 1f;
+    public float signLookDuration = 3f;
+    public float signLookSpeedMultiplier = 0.35f;
 
     private List<Transform> signsToVisit = new List<Transform>();
     private int currentSignIndex = 0;
@@ -14,6 +16,11 @@ public class PlayerController : MonoBehaviour
     private int gridHeight;
     private List<Vector2Int> currentPath = new List<Vector2Int>();
     private int currentPathIndex = 0;
+    private int currentPathTargetSignIndex = -1;
+    private bool isWaitingAtSign = false;
+    private float signLookTimer = 0f;
+    private Quaternion rotationBeforeSignLook;
+    private Transform currentSignLookTarget;
 
     private readonly Vector2Int[] directions =
     {
@@ -50,18 +57,25 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (HasReachedTarget(targetSign))
+        if (isWaitingAtSign)
         {
-            AdvanceToNextSign();
+            UpdateSignLook();
             return;
         }
 
-        if (currentPath.Count == 0 || currentPathIndex >= currentPath.Count)
+        if (HasReachedTarget(targetSign))
+        {
+            BeginSignLook(targetSign);
+            return;
+        }
+
+        if (currentPath.Count == 0 || currentPathIndex >= currentPath.Count || currentPathTargetSignIndex != currentSignIndex)
         {
             Vector2Int startCell = WorldToGrid(transform.position);
             Vector2Int targetCell = WorldToGrid(targetSign.position);
             currentPath = FindPath(startCell, targetCell);
             currentPathIndex = 0;
+            currentPathTargetSignIndex = currentSignIndex;
         }
 
         if (currentPath.Count == 0 || currentPathIndex >= currentPath.Count)
@@ -82,6 +96,95 @@ public class PlayerController : MonoBehaviour
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
 
         if (direction.sqrMagnitude > 0.0001f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+    }
+
+    private void BeginSignLook(Transform targetSign)
+    {
+        isWaitingAtSign = true;
+        signLookTimer = signLookDuration;
+        rotationBeforeSignLook = transform.rotation;
+        currentSignLookTarget = targetSign != null && targetSign.childCount > 0 ? targetSign.GetChild(0) : targetSign;
+        currentPath.Clear();
+        currentPathIndex = 0;
+    }
+
+    private void UpdateSignLook()
+    {
+        signLookTimer -= Time.deltaTime;
+
+        if (currentSignLookTarget != null)
+        {
+            Vector3 lookDirection = currentSignLookTarget.position - transform.position;
+            lookDirection.y = 0f;
+
+            if (lookDirection.sqrMagnitude > 0.0001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
+        }
+
+        if (signLookTimer > 0f)
+        {
+            MoveTowardNextSign(signLookSpeedMultiplier);
+            return;
+        }
+
+        isWaitingAtSign = false;
+        transform.rotation = rotationBeforeSignLook;
+        AdvanceToNextSign();
+    }
+
+    private void MoveTowardNextSign(float speedMultiplier)
+    {
+        if (signsToVisit.Count == 0)
+            return;
+
+        int nextSignIndex = (currentSignIndex + 1) % signsToVisit.Count;
+        Transform nextSign = signsToVisit[nextSignIndex];
+        if (nextSign == null)
+            return;
+
+        if (currentPath.Count == 0 || currentPathIndex >= currentPath.Count || currentPathTargetSignIndex != nextSignIndex)
+        {
+            Vector2Int startCell = WorldToGrid(transform.position);
+            Vector2Int targetCell = WorldToGrid(nextSign.position);
+            currentPath = FindPath(startCell, targetCell);
+            currentPathIndex = 0;
+            currentPathTargetSignIndex = nextSignIndex;
+        }
+
+        if (currentPath.Count == 0 || currentPathIndex >= currentPath.Count)
+            return;
+
+        Vector3 targetPosition = GridToWorld(currentPath[currentPathIndex]);
+        Vector3 direction = targetPosition - transform.position;
+
+        if (direction.sqrMagnitude <= arrivalDistance * arrivalDistance)
+        {
+            currentPathIndex++;
+            return;
+        }
+
+        float effectiveSpeed = moveSpeed * speedMultiplier;
+        transform.position = Vector3.MoveTowards(transform.position, targetPosition, effectiveSpeed * Time.deltaTime);
+
+        if (isWaitingAtSign && currentSignLookTarget != null)
+        {
+            Vector3 lookDirection = currentSignLookTarget.position - transform.position;
+            lookDirection.y = 0f;
+
+            if (lookDirection.sqrMagnitude > 0.0001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            }
+        }
+        else if (direction.sqrMagnitude > 0.0001f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
@@ -111,6 +214,7 @@ public class PlayerController : MonoBehaviour
         currentSignIndex = (currentSignIndex + 1) % signsToVisit.Count;
         currentPath.Clear();
         currentPathIndex = 0;
+        currentPathTargetSignIndex = -1;
     }
 
     private List<Vector2Int> FindPath(Vector2Int start, Vector2Int target)
