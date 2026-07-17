@@ -128,11 +128,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7abe2a1d7e024cc98664c674eebdc4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  moveSpeed: 3
-  rotationSpeed: 2
-  arrivalDistance: 1
-  signLookDuration: 2
-  signLookSpeedMultiplier: 0.1
+  moveSpeed: 2
+  rotationSpeed: 180
+  arrivalDistance: 0
+  signLookDuration: 3
+  signLookSpeedMultiplier: 0.05
 --- !u!1 &7761658657486313385
 GameObject:
   m_ObjectHideFlags: 0
