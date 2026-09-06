@@ -196,7 +196,7 @@ public class MazeGenerator : MonoBehaviour
             if (counter == signs - 1)
                 signText.SetText(EncodeWord(word, symbolMap));
             else
-                signText.SetText(symbolMap[word[counter]]);
+                signText.SetText(word[counter] + " = " + symbolMap[word[counter]]);
             counter++;
         }
     }
