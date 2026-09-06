@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ public class MazeGenerator : MonoBehaviour
     private int gridHeight;
     private List<Transform> createdSigns = new List<Transform>();
     private System.Random rand = new System.Random();
+    private const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     Vector2Int[] directions = { // Define possible directions (Right, Left, Up, Down)
             new Vector2Int(1, 0), 
@@ -28,9 +30,10 @@ public class MazeGenerator : MonoBehaviour
     void Start()
     {
         GenerateMaze();
+        SetupSigns();
     }
 
-    void GenerateMaze()
+    private void GenerateMaze()
     {
         gridWidth = width + 2;
         gridHeight = height + 2;
@@ -55,7 +58,7 @@ public class MazeGenerator : MonoBehaviour
 
     }
 
-     bool SetupPlayerAndSigns(int midX, int midY)
+    private bool SetupPlayerAndSigns(int midX, int midY)
     {
         GameObject player = Instantiate(playerPrefab, new Vector3(midX*2f, 1f, midY*2f), Quaternion.identity); //Instantiate player in the middle of maze
         PlayerController playerController = player.GetComponent<PlayerController>();
@@ -69,8 +72,8 @@ public class MazeGenerator : MonoBehaviour
 
         int attemped = 0;
         while (signsSet < signs || attemped >= 10000){
-            int x = Random.Range(1, gridWidth - 1);
-            int y = Random.Range(1, gridHeight - 1);
+            int x = UnityEngine.Random.Range(1, gridWidth - 1);
+            int y = UnityEngine.Random.Range(1, gridHeight - 1);
             if (visited[x, y] && !outPos[x,y] && IsInCorner(x,y)){
                 GameObject s = Instantiate(signsPrefab, new Vector3(x*2f, 0.5f, y*2f), Quaternion.identity); //Instantiate sign at random position
                 createdSigns.Add(s.transform);
@@ -92,7 +95,7 @@ public class MazeGenerator : MonoBehaviour
         return signsSet == signs;
     }
 
-    void CreateMaze(int x, int y)
+    private void CreateMaze(int x, int y)
     {
         visited[x, y] = true; // Mark the current cell as visited
 
@@ -114,7 +117,7 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    void DrawMaze()
+    private void DrawMaze()
     {
         var walls = new GameObject("Walls");
         var floors = new GameObject("Floors");
@@ -134,12 +137,12 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    bool IsInBounds(int x, int y)
+    private bool IsInBounds(int x, int y)
     {
         return x > 0 && x < gridWidth - 1 && y > 0 && y < gridHeight - 1; // Keep the outer border as walls
     }
 
-    void Shuffle(Vector2Int[] array)
+    private void Shuffle(Vector2Int[] array)
     {
         for (int i = array.Length - 1; i > 0; i--)
         {
@@ -150,7 +153,7 @@ public class MazeGenerator : MonoBehaviour
         }
     }
 
-    bool IsInCorner(int x, int y){
+    private bool IsInCorner(int x, int y){
 
         int paths = 0;
         foreach (Vector2Int v in directions){
@@ -161,7 +164,7 @@ public class MazeGenerator : MonoBehaviour
         return paths == 1;
     }
 
-    void RotateTowardsClearPath(int x, int y, GameObject s){
+    private void RotateTowardsClearPath(int x, int y, GameObject s){
         foreach (Vector2Int v in directions){
             if (visited[x + v.x, y + v.y])
                 if (v.x == 1) //Right
@@ -172,5 +175,34 @@ public class MazeGenerator : MonoBehaviour
                     s.transform.Rotate(0f, 180f, 0f);
         }
             
+    }
+
+    private void SetupSigns()
+    {
+        string word = GenerateRandomWord(signs - 1);
+        Debug.Log($"Generated word: {word}");
+
+        int counter = 0;
+        foreach (Transform sign in createdSigns)
+        {
+            var signText = sign.Find("Text").GetComponent<TMPro.TextMeshPro>();
+            if (counter == signs - 1)
+                signText.SetText(word);
+            else
+            signText.SetText(word[counter].ToString());
+            counter++;
+        }
+    }
+
+    public string GenerateRandomWord(int numberOfLetters)
+    {
+        if (numberOfLetters < 0)
+            throw new ArgumentOutOfRangeException(nameof(numberOfLetters), "The number of letters cannot be negative.");
+
+        char[] word = new char[numberOfLetters];
+        for (int i = 0; i < word.Length; i++)
+            word[i] = Letters[rand.Next(Letters.Length)];
+
+        return new string(word);
     }
 }
