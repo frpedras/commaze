@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -197,7 +196,7 @@ public class MazeGenerator : MonoBehaviour
     public string GenerateRandomWord(int numberOfLetters)
     {
         if (numberOfLetters < 0)
-            throw new ArgumentOutOfRangeException(nameof(numberOfLetters), "The number of letters cannot be negative.");
+            throw new System.ArgumentOutOfRangeException(nameof(numberOfLetters), "The number of letters cannot be negative.");
 
         char[] word = new char[numberOfLetters];
         for (int i = 0; i < word.Length; i++)
