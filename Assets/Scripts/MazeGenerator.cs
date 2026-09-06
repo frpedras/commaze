@@ -18,6 +18,13 @@ public class MazeGenerator : MonoBehaviour
     private List<Transform> createdSigns = new List<Transform>();
     private System.Random rand = new System.Random();
     private const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static readonly string[] Symbols =
+    {
+        "▲", "△", "▼", "▽", "◀", "◁", "▶", "▷", "■", "□", "◆", "◇", "●", "○",
+        "★", "☆", "✦", "✧", "✚", "✜", "✤", "✥", "✿", "❀", "☀", "☼", "☾", "☽",
+        "♠", "♣", "♥", "♦", "◈", "◎", "◉", "◌", "◍", "◐", "◑", "◒", "◓", "◔",
+        "⬟", "⬢", "⬣", "⬡", "⬠", "⬥", "⬦", "⬧", "⬨", "⬩", "⬪", "⬫"
+    };
 
     Vector2Int[] directions = { // Define possible directions (Right, Left, Up, Down)
             new Vector2Int(1, 0), 
@@ -179,6 +186,7 @@ public class MazeGenerator : MonoBehaviour
     private void SetupSigns()
     {
         string word = GenerateRandomWord(signs - 1);
+        Dictionary<char, string> symbolMap = CreateSymbolMap(word);
         Debug.Log($"Generated word: {word}");
 
         int counter = 0;
@@ -186,11 +194,42 @@ public class MazeGenerator : MonoBehaviour
         {
             var signText = sign.Find("Text").GetComponent<TMPro.TextMeshPro>();
             if (counter == signs - 1)
-                signText.SetText(word);
+                signText.SetText(EncodeWord(word, symbolMap));
             else
-            signText.SetText(word[counter].ToString());
+                signText.SetText(symbolMap[word[counter]]);
             counter++;
         }
+    }
+
+    private Dictionary<char, string> CreateSymbolMap(string word)
+    {
+        List<string> availableSymbols = new List<string>(Symbols);
+        Dictionary<char, string> symbolMap = new Dictionary<char, string>();
+
+        foreach (char letter in word)
+        {
+            if (symbolMap.ContainsKey(letter))
+                continue;
+
+            if (availableSymbols.Count == 0)
+                throw new System.InvalidOperationException("There are not enough symbols for this word.");
+
+            int symbolIndex = rand.Next(availableSymbols.Count);
+            symbolMap[letter] = availableSymbols[symbolIndex];
+            availableSymbols.RemoveAt(symbolIndex);
+        }
+
+        return symbolMap;
+    }
+
+    private string EncodeWord(string word, Dictionary<char, string> symbolMap)
+    {
+        System.Text.StringBuilder encodedWord = new System.Text.StringBuilder();
+
+        foreach (char letter in word)
+            encodedWord.Append(symbolMap[letter]);
+
+        return encodedWord.ToString();
     }
 
     public string GenerateRandomWord(int numberOfLetters)
